@@ -1,0 +1,59 @@
+name: rescuea_miniapp
+description: "SAA 吉诺道路救援 - 跨平台救援技师 APP（鸿蒙/iOS/Android）"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.4.0
+  flutter: ^3.22.0
+  # ⚠️ 鸿蒙构建需 flutter-ohos (3.22.1-ohos)，详见 ohos/README.md
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+
+  # 网络请求
+  dio: ^5.7.0
+
+  # 状态管理
+  provider: ^6.1.2
+
+  # 定位 & 地图
+  amap_flutter_map: ^3.0.0
+  amap_flutter_location: ^3.0.0
+
+  # 白屏过渡
+  flutter_native_splash: ^2.4.0
+  permission_handler: ^11.3.1
+
+  # 本地存储
+  shared_preferences: ^2.3.3
+  flutter_secure_storage: ^9.2.3
+
+  # 图片
+  image_picker: ^1.1.2
+  cached_network_image: ^3.4.1
+
+  # 加密
+  crypto: ^3.0.6
+  pointycastle: ^3.9.1
+  asn1lib: ^1.5.8
+
+  # 工具
+  intl: ^0.19.0
+  url_launcher: ^6.3.1
+  signature: ^5.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
