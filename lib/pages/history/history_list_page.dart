@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../models/task_model.dart';
-import '../../widgets/order_card.dart';
+import 'package:provider/provider.dart';
+import '../../theme/app_theme.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/task_card.dart';
+import 'history_detail_page.dart';
 
-/// 历史任务列表页
+/// 历史任务列表 - 对应小程序 historyTask.wxml
 class HistoryListPage extends StatefulWidget {
   const HistoryListPage({super.key});
 
@@ -11,73 +14,59 @@ class HistoryListPage extends StatefulWidget {
 }
 
 class _HistoryListPageState extends State<HistoryListPage> {
-  List<TaskModel> _historyTasks = [];
-  bool _isLoading = true;
+  List<Map<String, dynamic>> _historyList = [];
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadHistory();
+    _fetchHistory();
   }
 
-  Future<void> _loadHistory() async {
-    setState(() => _isLoading = true);
-    // 模拟加载历史数据
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      _isLoading = false;
-      _historyTasks = List.generate(8, (i) => TaskModel(
-        caseNo: 'SAA2026052${100 + i}',
-        caseTypeName: '道路救援',
-        serviceTypeName: i % 2 == 0 ? '拖车服务' : '搭电服务',
-        taskStatusName: '已完成',
-        customerName: ['张伟', '李娜', '王强', '刘洋', '陈明', '赵丽', '孙杰', '周婷'][i],
-        bookTime: '2026-05-${15 + i ~/ 2} ${8 + i}:00',
-        faultPlateNumber: ['京A·12345', '沪B·67890', '粤C·11111', '浙D·22222',
-                          '苏E·33333', '鲁F·44444', '川G·55555', '闽H·66666'][i],
-        rescueAddress: '北京市朝阳区道路救援点${i + 1}号',
-        desAddress: i % 2 == 0 ? '北京市海淀区维修厂${i + 1}' : null,
-      ));
-    });
+  Future<void> _fetchHistory() async {
+    final auth = context.read<AuthService>();
+    final res = await auth.ajax('/miniapp/order/task/list', {});
+    if (mounted) {
+      setState(() {
+        _historyList = ((res['data'] as List<dynamic>?)
+                ?.map((e) => e as Map<String, dynamic>)
+                .toList() ??
+            []);
+        _loading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(title: const Text('历史任务')),
-      body: _isLoading
+      body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _historyTasks.isEmpty
-              ? _buildEmpty()
-              : RefreshIndicator(
-                  onRefresh: _loadHistory,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _historyTasks.length,
-                    itemBuilder: (_, i) => OrderCard(
-                      task: _historyTasks[i],
-                      onTap: () {
-                        // Navigator.push 跳转详情
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('查看: ${_historyTasks[i].caseNo}')),
-                        );
-                      },
-                    ),
+          : RefreshIndicator(
+              onRefresh: _fetchHistory,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(15),
+                itemCount: _historyList.length,
+                itemBuilder: (_, i) => GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HistoryDetailPage(
+                          task: _historyList[i],
+                        ),
+                      ),
+                    );
+                  },
+                  child: TaskCard(
+                    task: _historyList[i],
+                    showFullInfo: false,
                   ),
                 ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text('暂无历史任务', style: TextStyle(fontSize: 16, color: Colors.grey[500])),
-        ],
-      ),
+              ),
+            ),
     );
   }
 }
