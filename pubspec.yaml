@@ -46,7 +46,6 @@ dependencies:
   intl: ^0.19.0
   url_launcher: ^6.3.1
   signature: ^5.5.0
-  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:
@@ -58,36 +57,3 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    - assets/images/hbg.png
-    - assets/images/head.png
-    - assets/images/addIcon.png
-    - assets/images/desIcon.png
-    - assets/images/tecNotice.png
-    - assets/images/tips.png
-    - assets/images/edit.png
-    - assets/images/taskbar.png
-    - assets/images/taskbar_on.png
-    - assets/images/mine.png
-    - assets/images/mine_on.png
-    - assets/images/accept.png
-    - assets/images/accept_on.png
-    - assets/images/task.png
-    - assets/images/proxy.png
-    - assets/images/pwd.png
-    - assets/images/back.png
-    - assets/images/defaultImg.png
-    - assets/images/idcard.png
-    - assets/images/phone.png
-    - assets/images/tel.png
-    - assets/images/arrow.png
-    - assets/images/close.svg
-    - assets/images/client.png
-    - assets/images/carOwn.png
-    - assets/images/icon1.png
-    - assets/images/icon2.png
-    - assets/images/icon3.png
-    - assets/images/icon4.png
-    - assets/images/icon5.png
-    - assets/images/icon6.png
-    - assets/images/icon7.png
-    - assets/images/icon8.png

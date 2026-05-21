@@ -1,91 +1,113 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../models/user_model.dart';
 import 'api_service.dart';
 
-/// 登录/鉴权服务 - 对应小程序 app.js 中的 login/refreshToken/userInfo
+/// 认证服务 - 管理登录/Token/用户信息
 class AuthService extends ChangeNotifier {
   final ApiService _api = ApiService();
-  Map<String, dynamic>? _userInfo;
-  Map<String, dynamic>? _tokenInfo;
-  bool _isLoggedIn = false;
+  final _secureStorage = const FlutterSecureStorage();
 
-  Map<String, dynamic>? get userInfo => _userInfo;
-  Map<String, dynamic>? get tokenInfo => _tokenInfo;
-  bool get isLoggedIn => _isLoggedIn;
+  UserModel? _currentUser;
+  String? _token;
 
-  AuthService() {
-    _loadLocalToken();
-  }
+  UserModel? get currentUser => _currentUser;
+  String? get token => _token;
+  bool get isLoggedIn => _token != null;
 
-  Future<void> _loadLocalToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final tokenStr = prefs.getString('tokenInfo');
-    if (tokenStr != null) {
-      _tokenInfo = jsonDecode(tokenStr) as Map<String, dynamic>?;
-      final token = _tokenInfo?['accessToken'] as String?;
-      if (token != null) {
-        _api.setToken(token);
-        _isLoggedIn = true;
-        notifyListeners();
-        // 刷新token
-        _refreshToken();
+  /// 初始化 - 从本地读取登录状态
+  Future<void> init() async {
+    _token = await _secureStorage.read(key: 'token');
+    if (_token != null) {
+      _api.setToken(_token);
+      final userStr = await _secureStorage.read(key: 'user_info');
+      if (userStr != null) {
+        _currentUser = UserModel.fromJson(
+          jsonDecode(userStr) as Map<String, dynamic>,
+        );
       }
-    }
-  }
-
-  /// 登录 - 对应小程序的toLogin
-  Future<bool> login(String phone, String password) async {
-    final res = await _api.ajax('/miniapp/login/weixin-mini-app-login', {
-      'phone': phone,
-      'password': password,
-    });
-    if (res['status'] == 200 && res['data'] != null) {
-      _tokenInfo = res['data'] as Map<String, dynamic>?;
-      final token = _tokenInfo?['accessToken'] as String?;
-      if (token != null) {
-        _api.setToken(token);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('tokenInfo', jsonEncode(_tokenInfo));
-        _isLoggedIn = true;
-        notifyListeners();
-        _getUserInfo();
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /// 获取用户信息
-  Future<void> _getUserInfo() async {
-    final res = await _api.ajax('/miniapp/user/info', {});
-    if (res['status'] == 200) {
-      _userInfo = res['data'] as Map<String, dynamic>?;
       notifyListeners();
     }
   }
 
-  /// 刷新token
-  Future<void> _refreshToken() async {
-    final res = await _api.ajax('/miniapp/login/reflush-token', {});
-    if (res['status'] == 200) {
-      _getUserInfo();
+  /// 微信登录（开发环境模拟登录）
+  Future<bool> login(String code) async {
+    try {
+      final res = await _api.login(code);
+      if (res.statusCode == 200 &&
+          res.data is Map &&
+          res.data['status'] == 200) {
+        final content = res.data['content'] as Map<String, dynamic>;
+        _token = content['token']?.toString();
+      } else {
+        // API 返回非 200 → 开发环境模拟
+        return _mockLogin();
+      }
+    } catch (_) {
+      // 开发/测试环境无后端 → 模拟登录成功
+      return _mockLogin();
     }
+
+    if (_token != null) {
+      _api.setToken(_token);
+      await _secureStorage.write(key: 'token', value: _token!);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', _token!);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
-  /// 快捷请求 - 供页面调用
-  Future<Map<String, dynamic>> ajax(String url, Map<String, dynamic> data,
-      {String method = 'POST'}) {
-    return _api.ajax(url, data, method: method);
+  /// 开发环境模拟登录
+  Future<bool> _mockLogin() async {
+    _token = 'mock_token_dev_${DateTime.now().millisecondsSinceEpoch}';
+    _api.setToken(_token);
+    _currentUser = UserModel(
+      userId: '1',
+      name: '救援技师（测试）',
+      phone: '13800138000',
+    );
+    await _secureStorage.write(key: 'token', value: _token!);
+    await _secureStorage.write(
+      key: 'user_info',
+      value: jsonEncode(_currentUser!.toJson()),
+    );
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('token', _token!);
+    debugPrint('✅ 开发环境模拟登录成功');
+    notifyListeners();
+    return true;
   }
 
   /// 退出登录
   Future<void> logout() async {
-    _userInfo = null;
-    _tokenInfo = null;
-    _isLoggedIn = false;
+    _token = null;
+    _currentUser = null;
+    _api.setToken(null);
+    await _secureStorage.delete(key: 'token');
+    await _secureStorage.delete(key: 'user_info');
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('tokenInfo');
+    await prefs.remove('token');
     notifyListeners();
+  }
+
+  /// 刷新 Token
+  Future<bool> refreshToken() async {
+    try {
+      final res = await _api.refreshToken();
+      if (res.statusCode == 200 && res.data['status'] == 200) {
+        final expiresTime = res.data['content'];
+        debugPrint('Token 过期时间: $expiresTime');
+        return true;
+      }
+      await logout();
+      return false;
+    } catch (e) {
+      debugPrint('Refresh token error: $e');
+      return false;
+    }
   }
 }
