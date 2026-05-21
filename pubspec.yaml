@@ -6,7 +6,7 @@ version: 1.0.0+1
 environment:
   sdk: ^3.4.0
   flutter: ^3.22.0
-  # ⚠️ 鸿蒙构建需 flutter-ohos (3.22.1-ohos)，详见 ohos/README.md
+  # ⚠️ 鸿蒙构建需 flutter_flutter (3.27.5-ohos)，详见 ohos/README.md
 
 dependencies:
   flutter:

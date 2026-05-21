@@ -42,14 +42,7 @@ flutter {
     source = "../.."
 }
 
-// Workaround: AMap 3DMap and Location SDKs share common utility classes
-// that cause "Duplicate class" errors during AGP transform.
-// We keep only the 3DMap SDK and use it as the single implementation,
-// relying on its bundled duplicate classes.
+// AMap SDK - android plugins use compileOnly, add as implementation for R8
 dependencies {
-    implementation("com.amap.api:3dmap:10.0.600") {
-        // Exclude location SDK to avoid duplicate class conflicts;
-        // the location classes needed by amap_flutter_location are
-        // provided by the plugin's compileOnly + location SDK AAR
-    }
+    implementation("com.amap.api:3dmap:10.0.600")
 }
